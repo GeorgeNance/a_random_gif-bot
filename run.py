@@ -16,7 +16,11 @@ hotphrases=[
     'random .gifs',
     'random gifs',
     'random .gif',
-    'random.gif'
+    'random.gif',
+    'randomgif',
+    'random_gif',
+    'a_random_gif'
+
     ]
 
 gifsdone=[]
@@ -30,17 +34,18 @@ r.login(user_name, pw)
 print('logged in')
 
 def getgif():
-    r_gifs = r.get_subreddit('gifs')
-    for x in r_gifs.get_new(limit=100):
+    r_gifs = r.get_subreddit('gifs+gif+Updownvotegifs+captiongifs+Dancinggifs+reactiongifs')
+    for x in r_gifs.get_new(limit=200):
         if str(x.url).startswith('http://i.') and x.id not in gifsdone:
             
             gifs.append(x)
     chosen_gif=choice(gifs)
-    gifsdone.append(x.id)
+    gifs.remove(chosen_gif)
+    gifsdone.append(chosen_gif.id)
     return chosen_gif
 
 
-sub=r.get_subreddit('funny+gifs+pics+gaming+adviceanimals')
+sub=r.get_subreddit('all')
 
 
 
@@ -52,9 +57,15 @@ while True:
                     print(comment.body+'--'+str(comment.author))
                     randomgif=getgif()
                     try:
-                        comment.reply('[Here is a random Gif!]'+'('+randomgif.url+') \n\n This Gif was chosen at random from /r/gifs\n\n Support the OP of this Gif by clicking [here]('+randomgif.permalink+')\n\n _____ \n\n I am still in development!'
-                                                                     ' If you dislike me, just let me know in PM.')
-
+                        if randomgif.over_18==True:
+                            comment.reply('[Here is a random gif!](NSFW)'+'('+randomgif.url+') \n\n This gif was chosen at random from /r/'+randomgif.subreddit+'\n\n Support the OP of this gif by clicking [here]('+randomgif.permalink+')\n\n _____ \n\n I am still in development!'+
+                                      '\n\n Find out about me [here](http://www.reddit.com/r/botwatch/comments/1sewvk/im_a_random_gif_a_bot_dedicated_to_giving_you_a/)'
+                                                                     )
+                        else:
+                            comment.reply('[Here is a random gif!]'+'('+randomgif.url+') \n\n This gif was chosen at random from /r/gifs'+randomgif.subreddit+'\n\n Support the OP of this gif by clicking [here]('+randomgif.permalink+')\n\n _____ \n\n I am still in development!'+
+                                      '\n\n Find out about me [here](http://www.reddit.com/r/botwatch/comments/1sewvk/im_a_random_gif_a_bot_dedicated_to_giving_you_a/)'
+                                                                     )
+                        print(gifsdone)
                         print('commented--'+datetime.now().strftime('%H:%M:%S'))
                         comment.upvote()
                         print('upvoted')
@@ -67,6 +78,6 @@ while True:
                 
                 
 
-    print('sleeping -- '+datetime.now().strftime('%H:%M:%S'))
-    time.sleep(15)
+    #print('sleeping -- '+datetime.now().strftime('%H:%M:%S'))
+    time.sleep(5)
 
