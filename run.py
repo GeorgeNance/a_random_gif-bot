@@ -1,23 +1,21 @@
 import praw
-
+import re
 import time
 from datetime import datetime
 from random import choice
 
 
 already_done = set()
-
-print('Loaded Datafile')
-user_name=''
-pw=''
+user_name='A_random_gif'
+pw='not4u'
 gifs=[]
 hotphrases=[
-    'random gif',
+    'random gif ',
+    'random gif.',
     'random .gifs',
     'random gifs',
     'random .gif',
     'random.gif',
-    'randomgif',
     'random_gif',
     'a_random_gif'
 
@@ -25,7 +23,9 @@ hotphrases=[
 
 gifsdone=[]
 
-    
+banned=[
+    "leagueoflegends"
+]
 
 print( "[bot] setting up connection with Reddit")
 
@@ -34,8 +34,8 @@ r.login(user_name, pw)
 print('logged in')
 
 def getgif():
-    r_gifs = r.get_subreddit('gifs+gif+Updownvotegifs+captiongifs+Dancinggifs+reactiongifs')
-    for x in r_gifs.get_new(limit=200):
+    r_gifs = r.get_subreddit('gifs')
+    for x in r_gifs.get_new(limit=None):
         if str(x.url).startswith('http://i.') and x.id not in gifsdone:
             
             gifs.append(x)
@@ -47,32 +47,70 @@ def getgif():
 
 sub=r.get_subreddit('all')
 
+def message(count):
+    gifreply=""
+    phrase=''
+    for i in range(count):
+        if count == 1:
+            phrase='[Here is a random gif!'
+        else:
+            phrase="[randomgif["+str(i+1)+']'
+
+        randomgif=getgif()
+        if randomgif.over_18==True:
+            gifreply+=phrase+'(NSFW)]'+'('+randomgif.url+')|Support the OP [here]('+randomgif.permalink+')\n\n'
+        else:
+            gifreply+=phrase+']'+'('+randomgif.url+')|Support the OP [here]('+randomgif.permalink+')\n\n'
+    reply=gifreply\
+          +'Gifs are chosen at random from /r/gifs'\
+          +'\n\n _____ \n\n I am still in development!'\
+          +'\n\n Find out about me [here](http://www.reddit.com/r/botwatch/comments/1sewvk/im_a_random_gif_a_bot_dedicated_to_giving_you_a/)'
+    return reply
 
 
+def parse_comment(comment):
+    find=re.findall('=[1-9]?[0-9]',comment)
+    if find !=[]:
+        str=(find[0])
+        count=int(str[1:3])
+        if count > 10:
+            count=10
+    else:
+        count=1
+    return count
+
+
+
+def reply_to(comment,count):
+    msg=message(count)
+    try:
+        comment.reply(msg)
+        print(gifsdone)
+        print('commented---'+datetime.now().strftime('%H:%M:%S'))
+        comment.upvote()
+        print('upvoted')
+        already_done.add(comment.id)
+    except sub.RATELIMIT:
+        print('Comment Failed')
+        pass
+
+print('Searching')
 while True:
-    print('Searching')
+
     for comment in sub.get_comments(limit=None):
-        for phrase in hotphrases:
-            if phrase in str(comment.body).lower() and comment.id not in already_done and str(comment.author)!=user_name:
+        if str(comment.author)!=user_name and comment.subreddit not in banned and comment.id not in already_done:
+                 if 'randomgif=' in str(comment.body).lower():
                     print(comment.body+'--'+str(comment.author))
-                    randomgif=getgif()
-                    try:
-                        if randomgif.over_18==True:
-                            comment.reply('[Here is a random gif!](NSFW)'+'('+randomgif.url+') \n\n This gif was chosen at random from /r/'+randomgif.subreddit+'\n\n Support the OP of this gif by clicking [here]('+randomgif.permalink+')\n\n _____ \n\n I am still in development!'+
-                                      '\n\n Find out about me [here](http://www.reddit.com/r/botwatch/comments/1sewvk/im_a_random_gif_a_bot_dedicated_to_giving_you_a/)'
-                                                                     )
-                        else:
-                            comment.reply('[Here is a random gif!]'+'('+randomgif.url+') \n\n This gif was chosen at random from /r/gifs'+randomgif.subreddit+'\n\n Support the OP of this gif by clicking [here]('+randomgif.permalink+')\n\n _____ \n\n I am still in development!'+
-                                      '\n\n Find out about me [here](http://www.reddit.com/r/botwatch/comments/1sewvk/im_a_random_gif_a_bot_dedicated_to_giving_you_a/)'
-                                                                     )
-                        print(gifsdone)
-                        print('commented--'+datetime.now().strftime('%H:%M:%S'))
-                        comment.upvote()
-                        print('upvoted')
-                        already_done.add(comment.id)
-                    except sub.RATELIMIT:
-                        print('Comment Failed')
-                        pass
+                    number=parse_comment(str(comment.body))
+                    reply_to(comment,number)
+
+
+                 else:
+                     for phrase in  hotphrases:
+                         if phrase in str(comment.body):
+                             print(comment.body+'--'+str(comment.author))
+                             reply_to(comment,1)
+
 
 
                 
